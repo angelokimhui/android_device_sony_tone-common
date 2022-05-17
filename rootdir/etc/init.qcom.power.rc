@@ -32,8 +32,8 @@ on init
     write /sys/devices/soc/${ro.boot.bootdevice}/${ro.boot.bootdevice}:ufs_variant/pm_qos_enable 0
     write /sys/module/lpm_levels/parameters/sleep_disabled "Y"
 
-    # Drop write bit from cpu_max_freq so that libqti-perfd can't set it
-    chmod 0444 /sys/module/msm_performance/parameters/cpu_max_freq
+    # Create Power HAL tunables
+    mkdir /dev/voxpopuli 0555 system system
 
 on boot
     # Update foreground and background cpusets
@@ -78,21 +78,19 @@ on enable-low-power
     write /sys/module/msm_thermal/core_control/enabled 0
 
     # Enable Adaptive LMK
-    write /sys/module/lowmemorykiller/parameters/enable_adaptive_lmk 1
+    write /sys/module/lowmemorykiller/parameters/enable_adaptive_lmk 0
     write /sys/module/lowmemorykiller/parameters/vmpressure_file_min 81250
-
-    # Input boost config
-    write /sys/module/cpu_boost/parameters/input_boost_freq "0:1324800 2:1324800"
-    write /sys/module/cpu_boost/parameters/input_boost_ms 40
-
-    # Set big.LITTLE scheduler parameters
-    write /proc/sys/kernel/sched_boost 0
-    write /proc/sys/kernel/sched_upmigrate 95
-    write /proc/sys/kernel/sched_downmigrate 90
-    write /proc/sys/kernel/sched_freq_inc_notify 400000
-    write /proc/sys/kernel/sched_freq_dec_notify 400000
-    write /proc/sys/kernel/sched_spill_nr_run 3
-    write /proc/sys/kernel/sched_init_task_load 100
+    
+    # STUNE PARAMETERS
+    write /dev/stune/schedtune.boost 12
+    write /dev/stune/schedtune.prefer_idle 1
+    write /dev/stune/top-app/schedtune.boost 15
+    write /dev/stune/top-app/schedtune.prefer_idle 1
+    write /dev/stune/rt/schedtune.boost 100
+    write /dev/stune/top-app/schedtune.prefer_idle 0
+    write /dev/stune/foreground/schedtune.boost 10
+    write /dev/stune/foreground/schedtune.prefer_idle 1
+    write /dev/stune/background/schedtune.prefer_idle 1
 
     # Enable bus-dcvs
     write /sys/class/devfreq/soc:qcom,cpubw/governor "bw_hwmon"
@@ -123,32 +121,30 @@ on enable-low-power
 
     # Enable all LPMs (this will enable C4, D4, D3, E4 and M3 LPMs)
     write /sys/module/lpm_levels/parameters/sleep_disabled "N"
-
-    # Set perfd properties
     setprop sys.post_boot.parsed 1
 
 on property:sys.boot_completed=1
     trigger enable-low-power
 
-    # Set I/O squeduler
-    setprop sys.io.scheduler "bfq"
+    # Set I/O scheduler
+    setprop sys.io.scheduler "cfq"
 
     # Start I/O prefetcher service
     start iop
 
     # Update cpusets now that boot is complete and we want better load balancing
     write /dev/cpuset/top-app/cpus 0-3
-    write /dev/cpuset/foreground/cpus 0-2
-    write /dev/cpuset/background/cpus 0
-    write /dev/cpuset/system-background/cpus 0-2
+    write /dev/cpuset/foreground/cpus 0-3
+    write /dev/cpuset/background/cpus 0-1
+    write /dev/cpuset/system-background/cpus 0-1
 
 on property:init.svc.recovery=running
     trigger enable-low-power
 
-service charger /charger
+service charger /sbin/chargeonlymode
     class charger
-    group log
-    seclabel u:r:healthd:s0
+    group system graphics
+    seclabel u:r:charger:s0
 
 service hvdcp_opti /vendor/bin/hvdcp_opti
     class main
