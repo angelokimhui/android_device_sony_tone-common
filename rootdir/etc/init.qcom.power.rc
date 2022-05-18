@@ -80,14 +80,21 @@ on enable-low-power
     
     # STUNE PARAMETERS
     write /dev/stune/schedtune.boost 20
+    write /dev/stune/schedtune.sched_boost 20
     write /dev/stune/schedtune.prefer_idle 1
     write /dev/stune/top-app/schedtune.boost 25
+    write /dev/stune/top-app/schedtune.sched_boost 25
     write /dev/stune/top-app/schedtune.prefer_idle 1
     write /dev/stune/rt/schedtune.boost 100
     write /dev/stune/top-app/schedtune.prefer_idle 0
-    write /dev/stune/foreground/schedtune.boost 50
+    write /dev/stune/foreground/schedtune.boost 20
     write /dev/stune/foreground/schedtune.prefer_idle 1
     write /dev/stune/background/schedtune.prefer_idle 1
+    write /sys/module/cpu_boost/parameters/dynamic_stune_boost 40
+    write /sys/module/cpu_boost/parameters/dynamic_stune_boost_ms 500
+    
+    # ENTROPY
+    write /proc/sys/kernel/random/write_wakeup_threshold 2048
     
     # Input boost config
     write /sys/module/cpu_boost/parameters/input_boost_freq "0:1324800 1:0:1324800"
