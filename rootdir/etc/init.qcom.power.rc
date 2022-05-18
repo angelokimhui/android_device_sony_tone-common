@@ -79,18 +79,18 @@ on enable-low-power
     write /sys/module/lowmemorykiller/parameters/vmpressure_file_min 81250
     
     # STUNE PARAMETERS
-    write /dev/stune/schedtune.boost 12
+    write /dev/stune/schedtune.boost 20
     write /dev/stune/schedtune.prefer_idle 1
-    write /dev/stune/top-app/schedtune.boost 15
+    write /dev/stune/top-app/schedtune.boost 25
     write /dev/stune/top-app/schedtune.prefer_idle 1
     write /dev/stune/rt/schedtune.boost 100
     write /dev/stune/top-app/schedtune.prefer_idle 0
-    write /dev/stune/foreground/schedtune.boost 10
+    write /dev/stune/foreground/schedtune.boost 50
     write /dev/stune/foreground/schedtune.prefer_idle 1
     write /dev/stune/background/schedtune.prefer_idle 1
     
     # Input boost config
-    write /sys/module/cpu_boost/parameters/input_boost_freq "0:1324800"
+    write /sys/module/cpu_boost/parameters/input_boost_freq "0:1324800 1:0:1324800"
     write /sys/module/cpu_boost/parameters/input_boost_ms 500
 
     # Enable bus-dcvs
@@ -128,14 +128,14 @@ on property:sys.boot_completed=1
     trigger enable-low-power
 
     # Set I/O scheduler
-    setprop sys.io.scheduler "cfq"
+    setprop sys.io.scheduler "bfq"
 
     # Start I/O prefetcher service
     start iop
 
     # Update cpusets now that boot is complete and we want better load balancing
     write /dev/cpuset/top-app/cpus 0-3
-    write /dev/cpuset/foreground/cpus 0-3
+    write /dev/cpuset/foreground/cpus 0-1,2-3
     write /dev/cpuset/background/cpus 0-1
     write /dev/cpuset/system-background/cpus 0-1
 
